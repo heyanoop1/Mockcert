@@ -1,0 +1,43 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mockcert
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d mockcert']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mockcert?schema=public
+      AUTH_SECRET: ${AUTH_SECRET:-dev-secret}
+      AUTH_URL: ${AUTH_URL:-http://localhost:3000}
+      ADMIN_NAME: ${ADMIN_NAME:-MockCert Admin}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@localhost}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-ChangeMe123!}
+      NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-MockCert}
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:3000}
+      NODE_ENV: ${NODE_ENV:-development}
+    ports:
+      - '3000:3000'
+
+volumes:
+  postgres-data:

@@ -1,0 +1,267 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AdminRole {
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum ExamVersionStatus {
+  DRAFT
+  REVIEW
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ImportStatus {
+  UPLOADING
+  VALIDATING
+  READY
+  CONFIRMED
+  FAILED
+  COMPLETE
+}
+
+enum ImportFormat {
+  CSV
+  JSON
+  TXT
+}
+
+enum AnswerType {
+  SINGLE
+  MULTIPLE
+}
+
+enum QuestionDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum QuestionChangeType {
+  NEW
+  UNCHANGED
+  MODIFIED
+  REMOVED
+}
+
+enum ExamMode {
+  FULL_VERSION
+  MOCK_EXAM
+  PRACTICE
+  NEW_QUESTIONS
+  CHANGED_QUESTIONS
+}
+
+enum AttemptStatus {
+  ACTIVE
+  SUBMITTED
+  EXPIRED
+  CANCELLED
+}
+
+enum AttemptQuestionStatus {
+  UNANSWERED
+  ANSWERED
+  REVIEW
+  SKIPPED
+}
+
+model AdminUser {
+  id            String    @id @default(uuid())
+  name          String
+  email         String    @unique
+  passwordHash  String
+  role          AdminRole @default(ADMIN)
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastLoginAt   DateTime?
+  auditLogs     AuditLog[]
+  importJobs    ImportJob[]
+}
+
+model Vendor {
+  id          String        @id @default(uuid())
+  name        String
+  slug        String        @unique
+  description String?
+  logoUrl     String?
+  active      Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  certifications Certification[]
+}
+
+model Certification {
+  id                      String          @id @default(uuid())
+  vendorId                String
+  examCode               String
+  name                   String
+  slug                   String
+  description            String?
+  defaultDurationMinutes Int
+  defaultQuestionCount   Int
+  defaultPassPercentage  Float
+  allowedQuestionCounts  Json
+  enabledModes           Json
+  active                 Boolean         @default(true)
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+  vendor                 Vendor          @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  versions               ExamVersion[]
+
+  @@unique([vendorId, examCode])
+  @@unique([vendorId, slug])
+}
+
+model ExamVersion {
+  id                   String            @id @default(uuid())
+  certificationId      String
+  previousVersionId    String?
+  displayName          String
+  versionCode          String
+  sourceProvider       String?
+  sourceFileName       String?
+  sourceChecksum       String?
+  releaseDate          DateTime?
+  durationMinutes      Int
+  passPercentage       Float
+  questionCount        Int
+  status               ExamVersionStatus @default(DRAFT)
+  isLatest             Boolean          @default(false)
+  legalRightsConfirmed Boolean          @default(false)
+  changeSummary        Json?
+  publishedAt          DateTime?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  certification        Certification     @relation(fields: [certificationId], references: [id], onDelete: Cascade)
+  questions            Question[]
+  attempts             ExamAttempt[]
+  importJobs           ImportJob[]
+
+  @@unique([certificationId, versionCode])
+}
+
+model Question {
+  id                 String             @id @default(uuid())
+  examVersionId      String
+  sourceQuestionNumber Int?
+  stableKey          String
+  fingerprint        String
+  questionText       String
+  optionA            String
+  optionB            String
+  optionC            String
+  optionD            String
+  correctAnswers     Json
+  answerType         AnswerType
+  explanation        String?
+  topic              String?
+  difficulty         QuestionDifficulty?
+  imageUrl           String?
+  changeType         QuestionChangeType @default(NEW)
+  previousQuestionId String?
+  active             Boolean            @default(true)
+  orderIndex        Int
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  examVersion       ExamVersion        @relation(fields: [examVersionId], references: [id], onDelete: Cascade)
+
+  @@index([examVersionId, active])
+  @@index([fingerprint])
+}
+
+model ImportJob {
+  id             String       @id @default(uuid())
+  examVersionId  String
+  originalFileName String
+  checksum       String
+  format         ImportFormat
+  status         ImportStatus
+  totalRows      Int          @default(0)
+  validRows      Int          @default(0)
+  invalidRows    Int          @default(0)
+  warnings       Json?
+  errorReport    Json?
+  createdById    String?
+  createdAt      DateTime     @default(now())
+  completedAt    DateTime?
+  examVersion    ExamVersion  @relation(fields: [examVersionId], references: [id], onDelete: Cascade)
+  createdBy      AdminUser?   @relation(fields: [createdById], references: [id])
+}
+
+model ExamAttempt {
+  id                  String           @id @default(uuid())
+  publicReference     String           @unique
+  examVersionId       String
+  candidateName       String
+  candidateEmail      String?
+  mode                ExamMode
+  configuredQuestionCount Int
+  status              AttemptStatus    @default(ACTIVE)
+  startedAt           DateTime         @default(now())
+  expiresAt           DateTime
+  submittedAt         DateTime?
+  totalQuestions      Int
+  answeredCount       Int             @default(0)
+  correctCount        Int             @default(0)
+  incorrectCount      Int             @default(0)
+  unansweredCount     Int             @default(0)
+  scorePercentage     Float?
+  passed              Boolean?
+  durationSeconds     Int?
+  accessTokenHash     String
+  ipHash              String?
+  userAgent           String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  examVersion         ExamVersion      @relation(fields: [examVersionId], references: [id], onDelete: Cascade)
+  attemptQuestions     AttemptQuestion[]
+}
+
+model AttemptQuestion {
+  id              String               @id @default(uuid())
+  attemptId       String
+  questionId      String
+  position        Int
+  optionOrder     Json
+  selectedAnswers Json?
+  status          AttemptQuestionStatus @default(UNANSWERED)
+  markedForReview Boolean              @default(false)
+  isCorrect       Boolean?
+  answeredAt      DateTime?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  attempt         ExamAttempt          @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, position])
+  @@unique([attemptId, questionId])
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  adminUserId String?
+  action      String
+  entityType  String
+  entityId    String?
+  beforeData  Json?
+  afterData   Json?
+  ipHash      String?
+  createdAt   DateTime @default(now())
+  adminUser   AdminUser? @relation(fields: [adminUserId], references: [id])
+}
+
+model AppSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt
+}
