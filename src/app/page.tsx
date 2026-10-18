@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export default function HomePage() {
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
@@ -7,7 +9,14 @@ export default function HomePage() {
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-600">MockCert</p>
             <h1 className="mt-2 text-3xl font-bold">Certification mock exam platform</h1>
           </div>
-          <button className="rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white">Admin login</button>
+          <div className="flex items-center gap-3">
+            <Link href="/exams" className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
+              Public exams
+            </Link>
+            <Link href="/admin/login" className="rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white">
+              Admin login
+            </Link>
+          </div>
         </header>
 
         <section className="grid gap-8 lg:grid-cols-[1.5fr_0.8fr]">
