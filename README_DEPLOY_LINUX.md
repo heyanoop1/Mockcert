@@ -104,20 +104,20 @@ View logs:
 docker compose logs -f app
 ```
 
-## 6) Run Prisma Migration and Generate Client
+## 6) Initialize the Database and Admin Account
 
-If your database is empty and Prisma migrations are required:
-
-```bash
-docker compose exec app npx prisma migrate deploy
-docker compose exec app npx prisma generate
-```
-
-If you have a seed script:
+This repository does not currently include Prisma migration files. For a new
+database, create its tables from the schema, then seed the admin account and
+sample exam data:
 
 ```bash
+docker compose exec app npx prisma db push
 docker compose exec app npm run db:seed
 ```
+
+Set a unique `ADMIN_EMAIL` and strong `ADMIN_PASSWORD` in the server `.env`
+before seeding. The seed command creates the account if it does not already
+exist; it does not reset an existing account's password.
 
 ## 7) Access the App
 

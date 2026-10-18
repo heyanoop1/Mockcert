@@ -17,5 +17,6 @@ COPY prisma ./prisma
 RUN npm install --omit=dev --legacy-peer-deps
 COPY --from=build /app/.next ./.next
 COPY --from=build /app/prisma ./prisma
+COPY --from=build /app/src/lib/question-dump.ts ./src/lib/question-dump.ts
 EXPOSE 3000
 CMD ["npm", "run", "start"]

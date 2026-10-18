@@ -44,12 +44,12 @@ export default function AdminLoginPage() {
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div>
             <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-700">Email</label>
-            <input id="email" name="email" type="email" required className="w-full rounded-xl border border-slate-300 px-3 py-2" defaultValue="admin@localhost" />
+            <input id="email" name="email" type="email" required className="w-full rounded-xl border border-slate-300 px-3 py-2" autoComplete="username" />
           </div>
 
           <div>
             <label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-700">Password</label>
-            <input id="password" name="password" type="password" required className="w-full rounded-xl border border-slate-300 px-3 py-2" defaultValue="ChangeMe123!" />
+            <input id="password" name="password" type="password" required className="w-full rounded-xl border border-slate-300 px-3 py-2" autoComplete="current-password" />
           </div>
 
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
